@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101828">
+<title>COMP1649 – Slide Reader</title>
+<style>
+  :root {
+    --bg: #f3f5f8;
+    --surface: #ffffff;
+    --surface-soft: #f8fafc;
+    --text: #172033;
+    --muted: #667085;
+    --line: #e4e7ec;
+    --accent: #465fff;
+    --accent-soft: #eef1ff;
+    --danger: #d92d20;
+    --shadow: 0 12px 36px rgba(16,24,40,.10);
+    --radius: 22px;
+    --header-h: 78px;
+    --nav-h: 82px;
+    --reader-size: 18px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; width:100%; height:100%; background:var(--bg); color:var(--text); }
+  body {
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    overflow:hidden;
+  }
+  button { font:inherit; }
+  .app {
+    height: 100dvh;
+    min-height: 100vh;
+    display:grid;
+    grid-template-rows: auto 1fr auto;
+  }
+  .topbar {
+    min-height: var(--header-h);
+    padding: max(12px, env(safe-area-inset-top)) 18px 12px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    background:rgba(255,255,255,.94);
+    border-bottom:1px solid var(--line);
+    backdrop-filter: blur(16px);
+    z-index:10;
+  }
+  .menu-btn, .icon-btn {
+    width:44px; height:44px; border-radius:14px; border:1px solid var(--line);
+    background:var(--surface); cursor:pointer; display:grid; place-items:center;
+  }
+  .title-wrap { min-width:0; flex:1; }
+  .eyebrow {
+    font-size:12px; color:var(--accent); font-weight:800; letter-spacing:.08em;
+    text-transform:uppercase; margin-bottom:3px;
+  }
+  .title {
+    font-size:clamp(16px, 2.5vw, 22px); font-weight:800; line-height:1.2;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .top-actions { display:flex; gap:8px; }
+  .reader {
+    min-height:0; overflow:auto; overscroll-behavior:contain;
+    padding:22px 18px 30px;
+    scroll-behavior:smooth;
+  }
+  .slide-card {
+    max-width:900px; margin:0 auto; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:clamp(22px, 4vw, 48px);
+  }
+  .slide-meta {
+    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;
+  }
+  .slide-pill {
+    display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px;
+    color:var(--accent); background:var(--accent-soft); font-weight:800; font-size:13px;
+  }
+  .count { color:var(--muted); font-size:13px; font-weight:700; }
+  h1 {
+    margin:0 0 24px; font-size:clamp(28px, 5vw, 46px); line-height:1.08; letter-spacing:-.035em;
+  }
+  .content { font-size:var(--reader-size); line-height:1.72; }
+  .content p { margin:0 0 16px; }
+  .content ul { margin:4px 0 20px; padding-left:1.4em; }
+  .content li { margin:8px 0; padding-left:3px; }
+  .section-label {
+    display:inline-block; margin:18px 0 10px; font-size:.78em; font-weight:900;
+    letter-spacing:.075em; text-transform:uppercase; color:var(--accent);
+  }
+  .quote {
+    margin:16px 0 20px; padding:16px 18px; border-left:4px solid var(--accent);
+    background:var(--surface-soft); border-radius:0 14px 14px 0; font-weight:700;
+  }
+  .lead {
+    font-size:1.12em; line-height:1.6; color:#344054;
+  }
+  .bottombar {
+    min-height:var(--nav-h);
+    padding:10px 18px max(10px, env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.96); border-top:1px solid var(--line);
+    backdrop-filter:blur(16px); z-index:10;
+  }
+  .nav-inner {
+    max-width:900px; margin:0 auto; display:grid; grid-template-columns:1fr minmax(110px, 1.4fr) 1fr;
+    gap:12px; align-items:center;
+  }
+  .nav-btn {
+    min-height:48px; border:1px solid var(--line); border-radius:15px; padding:0 16px;
+    background:var(--surface); color:var(--text); font-weight:800; cursor:pointer;
+  }
+  .nav-btn.primary { background:var(--text); color:#fff; border-color:var(--text); }
+  .nav-btn:disabled { opacity:.38; cursor:not-allowed; }
+  .progress-wrap { min-width:0; }
+  .progress-label { text-align:center; font-size:12px; color:var(--muted); font-weight:700; margin-bottom:7px; }
+  .progress { height:6px; border-radius:999px; overflow:hidden; background:#eaecf0; }
+  .progress > div { height:100%; width:0; background:var(--accent); transition:width .22s ease; }
+  .drawer-backdrop {
+    position:fixed; inset:0; background:rgba(16,24,40,.42); opacity:0; pointer-events:none;
+    transition:.2s ease; z-index:30;
+  }
+  .drawer {
+    position:fixed; inset:0 auto 0 0; width:min(88vw, 390px); background:var(--surface);
+    transform:translateX(-102%); transition:.24s ease; z-index:31;
+    display:flex; flex-direction:column; box-shadow:var(--shadow);
+  }
+  .drawer.open { transform:translateX(0); }
+  .drawer-backdrop.open { opacity:1; pointer-events:auto; }
+  .drawer-head {
+    padding:max(18px, env(safe-area-inset-top)) 18px 14px;
+    display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line);
+  }
+  .drawer-head strong { font-size:20px; }
+  .toc { overflow:auto; padding:10px; }
+  .toc button {
+    width:100%; border:0; background:transparent; text-align:left; cursor:pointer;
+    padding:13px 12px; border-radius:13px; display:flex; gap:12px; align-items:flex-start;
+  }
+  .toc button:hover, .toc button.active { background:var(--accent-soft); }
+  .toc-num { min-width:54px; font-weight:900; color:var(--accent); }
+  .toc-title { color:var(--text); font-weight:700; line-height:1.35; }
+  .hint {
+    max-width:900px; margin:12px auto 0; text-align:center; color:var(--muted); font-size:12px;
+  }
+  @media (max-width: 640px) {
+    :root { --header-h:72px; --nav-h:76px; --reader-size:17px; }
+    .topbar { padding-left:12px; padding-right:12px; gap:10px; }
+    .reader { padding:14px 10px 20px; }
+    .slide-card { border-radius:18px; padding:22px 18px 28px; box-shadow:none; }
+    .top-actions .font-label { display:none; }
+    .nav-inner { grid-template-columns:1fr 92px 1fr; gap:8px; }
+    .nav-btn { min-height:46px; padding:0 10px; }
+    h1 { margin-bottom:20px; }
+    .hint { display:none; }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0b1018; --surface:#111827; --surface-soft:#18202d; --text:#f2f4f7;
+      --muted:#98a2b3; --line:#263244; --accent:#8da2ff; --accent-soft:#1d2745;
+      --shadow:0 14px 38px rgba(0,0,0,.28);
+    }
+    .topbar,.bottombar { background:rgba(17,24,39,.94); }
+    .lead { color:#d0d5dd; }
+    .progress { background:#344054; }
+    .nav-btn.primary { background:#f2f4f7; color:#101828; border-color:#f2f4f7; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn" aria-label="Open slide list">☰</button>
+    <div class="title-wrap">
+      <div class="eyebrow" id="topSlideNo">Slide</div>
+      <div class="title" id="topTitle">COMP1649 Slide Reader</div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="fontDown" aria-label="Decrease text size">A−</button>
+      <button class="icon-btn" id="fontUp" aria-label="Increase text size">A+</button>
+    </div>
+  </header>
+
+  <main class="reader" id="reader" tabindex="0">
+    <article class="slide-card">
+      <div class="slide-meta">
+        <span class="slide-pill" id="slidePill">Slide 1</span>
+        <span class="count" id="slideCount"></span>
+      </div>
+      <h1 id="slideTitle"></h1>
+      <div class="content" id="slideContent"></div>
+    </article>
+    <div class="hint">Keyboard: ← / → &nbsp; • &nbsp; Mobile: swipe left/right</div>
+  </main>
+
+  <nav class="bottombar" aria-label="Slide navigation">
+    <div class="nav-inner">
+      <button class="nav-btn" id="prevBtn">← Previous</button>
+      <div class="progress-wrap">
+        <div class="progress-label" id="progressLabel"></div>
+        <div class="progress"><div id="progressBar"></div></div>
+      </div>
+      <button class="nav-btn primary" id="nextBtn">Next →</button>
+    </div>
+  </nav>
+</div>
+
+<div class="drawer-backdrop" id="backdrop"></div>
+<aside class="drawer" id="drawer" aria-label="Slide list">
+  <div class="drawer-head">
+    <strong>Slides</strong>
+    <button class="icon-btn" id="closeDrawer" aria-label="Close slide list">✕</button>
+  </div>
+  <div class="toc" id="toc"></div>
+</aside>
+
+<script>
+const slides = [{"number": 1, "title": "Understanding and Conceptualising Interaction", "items": [{"text": "Lecture segment", "bullet": false}, {"text": "Today we move from simply asking “Is this interface easy to use?” to a more fundamental HCI question:", "bullet": false}, {"text": "How does the user believe this system works?", "bullet": false}, {"text": "This is important because interface design is not simply about choosing colours, buttons, menus, or typography. Before designing the visible interface, we need to decide what kind of interaction we want users to have with the system.", "bullet": false}, {"text": "For example, imagine that we are designing a food-delivery application. Before we decide whether the Order button should be green or blue, we need to answer more fundamental questions:", "bullet": false}, {"text": "How does a customer find food?", "bullet": true}, {"text": "Is food organised by restaurant, category, location, or recommendation?", "bullet": true}, {"text": "What does adding food to an order mean?", "bullet": true}, {"text": "Can the customer modify an order?", "bullet": true}, {"text": "At what point is the order confirmed?", "bullet": true}, {"text": "What feedback does the system provide?", "bullet": true}, {"text": "These decisions form the basis of the user's understanding of the system.", "bullet": false}, {"text": "This week therefore focuses heavily on conceptual models, mental models, metaphors, interaction types, and cognitive friction.", "bullet": false}]}, {"number": 3, "title": "What is Interaction Design?", "items": [{"text": "Lecture segment", "bullet": false}, {"text": "Notice the word behaviour.", "bullet": false}, {"text": "Interaction design is not only concerned with what something looks like. It is concerned with what happens when users interact with it.", "bullet": false}, {"text": "Consider a simple button.", "bullet": false}, {"text": "A visual designer may consider:", "bullet": false}, {"text": "colour,", "bullet": true}, {"text": "typography,", "bullet": true}, {"text": "border radius,", "bullet": true}, {"text": "spacing.", "bullet": true}, {"text": "An interaction designer additionally asks:", "bullet": false}, {"text": "What happens when the user taps it?", "bullet": true}, {"text": "Can it be tapped twice?", "bullet": true}, {"text": "What happens while processing?", "bullet": true}, {"text": "What happens if processing fails?", "bullet": true}, {"text": "Does the user receive confirmation?", "bullet": true}, {"text": "Can the action be undone?", "bullet": true}]}, {"number": 4, "title": "Interaction Design Process", "items": [{"text": "Suppose we design an appointment system for elderly patients.", "bullet": false}, {"text": "We initially create a calendar interface.", "bullet": false}, {"text": "Usability testing reveals that users don't think in terms of calendar slots. They think:", "bullet": false}, {"text": "“I want to see Dr Smith sometime Tuesday morning.”", "bullet": false}, {"text": "That evaluation might force us to redesign the interaction around doctor + preferred period, rather than expecting users to navigate a complex calendar.", "bullet": false}, {"text": "Evaluation therefore does not simply identify cosmetic defects. It can challenge the conceptual model itself.", "bullet": false}]}, {"number": 5, "title": "Contexts for Interaction Design", "items": [{"text": "Interaction design is really about designing the relationship between people, activities, and technology.", "bullet": false}, {"text": "This means that our job is not:", "bullet": false}, {"text": "“Design a screen.”", "bullet": false}, {"text": "Our actual job might be:", "bullet": false}, {"text": "“Help nurses record medication safely.”", "bullet": false}, {"text": "The solution may involve a screen, scanner, wearable device, notification system, or several technologies working together.", "bullet": false}, {"text": "Notice the objectives listed on the slide:", "bullet": false}, {"text": "make work more effective;", "bullet": true}, {"text": "make work more efficient;", "bullet": true}, {"text": "make activities safer;", "bullet": true}, {"text": "improve learning;", "bullet": true}, {"text": "support entertainment;", "bullet": true}, {"text": "improve communication;", "bullet": true}, {"text": "encourage creativity.", "bullet": true}, {"text": "These are human outcomes, rather than interface features.", "bullet": false}, {"text": "Professional application", "bullet": false}, {"text": "When writing project objectives, avoid:", "bullet": false}, {"text": "“Develop a mobile application with five screens.”", "bullet": false}, {"text": "Instead consider:", "bullet": false}, {"text": "“Reduce the time warehouse staff need to locate goods while minimizing errors during inventory data entry.”", "bullet": false}, {"text": "The second statement tells us what successful interaction design should achieve.", "bullet": false}]}, {"number": 6, "title": "Contexts for Interaction Design (2)", "items": [{"text": "Lecture segment", "bullet": false}, {"text": "This slide demonstrates why HCI has become increasingly important.", "bullet": false}, {"text": "Consider the difference between designing:", "bullet": false}, {"text": "Spotify,", "bullet": true}, {"text": "a smartwatch,", "bullet": true}, {"text": "a hospital infusion system,", "bullet": true}, {"text": "a vehicle dashboard,", "bullet": true}, {"text": "a smart thermostat.", "bullet": true}, {"text": "All involve interaction, but their contexts are radically different.", "bullet": false}, {"text": "With Spotify, a minor operational error can be annoying.", "bullet": false}, {"text": "With a medical app, the same error could lead to incorrect treatment.", "bullet": false}, {"text": "With an in-vehicle interface, forcing a driver to spend five seconds visually searching for a function can become a safety issue.", "bullet": false}]}, {"number": 8, "title": "Three Core UCD Principles", "items": [{"text": "Lecture segment", "bullet": false}, {"text": "These three principles provide an excellent checklist for student projects.", "bullet": false}, {"text": "1. Understand users early", "bullet": false}, {"text": "We investigate characteristics such as:", "bullet": false}, {"text": "behaviour,", "bullet": true}, {"text": "cognition,", "bullet": true}, {"text": "physical capabilities,", "bullet": true}, {"text": "attitudes,", "bullet": true}, {"text": "tasks.", "bullet": true}, {"text": "For example, if we are designing for restaurant kitchen workers, we might discover:", "bullet": false}, {"text": "they work quickly;", "bullet": true}, {"text": "their hands may be wet;", "bullet": true}, {"text": "environmental noise is high;", "bullet": true}, {"text": "they rarely have time to read lengthy text.", "bullet": true}, {"text": "These findings directly influence the interaction design ideas.", "bullet": false}, {"text": "2. Measure behaviour", "bullet": false}, {"text": "Don't only ask:", "bullet": false}, {"text": "“Do you like this prototype?”", "bullet": false}, {"text": "Instead observe users attempting tasks.", "bullet": false}, {"text": "Measure things such as:", "bullet": false}, {"text": "completion;", "bullet": true}, {"text": "mistakes;", "bullet": true}, {"text": "hesitation;", "bullet": true}, {"text": "time;", "bullet": true}, {"text": "requests for help.", "bullet": true}, {"text": "A participant saying “Yes, this is easy” while taking four minutes to find the checkout button tells us something important.", "bullet": false}, {"text": "3. Iterate", "bullet": false}, {"text": "Testing is not the final step before product delivery.", "bullet": false}, {"text": "The intended process is:", "bullet": false}, {"text": "Design → Testing → Issue detection → Redesign → Retesting", "bullet": false}, {"text": "In industrial practice, this process may be repeated dozens or hundreds of times.", "bullet": false}]}, {"number": 9, "title": "Conceptualising a Design Idea: Why?", "items": [{"text": "The slide uses an intentionally uncomfortable-looking pair of boots.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "This visual is useful because something can technically function and still have a poor conceptual design.", "bullet": false}, {"text": "The question arises:", "bullet": false}, {"text": "Should we design it this way simply because we can?", "bullet": false}, {"text": "Software development teams frequently make this same mistake.", "bullet": false}, {"text": "A programmer might say:", "bullet": false}, {"text": "“Technically, the system supports this feature.”", "bullet": false}, {"text": "But from an HCI (Human-Computer Interaction) perspective, the question is:", "bullet": false}, {"text": "“Will anyone understand how to use it?”", "bullet": false}, {"text": "The conceptualization process compels us to consider user understanding before implementing detailed interface elements.", "bullet": false}, {"text": "Class discussion", "bullet": false}, {"text": "Show the image briefly and ask:", "bullet": false}, {"text": "“What do you believe these shoes are supposed to help the user accomplish?”", "bullet": false}, {"text": "The difficulty students experience interpreting the object is itself a lesson: if the object's purpose or operation conflicts with expectations, interaction becomes difficult.", "bullet": false}]}, {"number": 10, "title": "What is a Conceptual Model?", "items": [{"text": "Lecture segment", "bullet": false}, {"text": "Think about opening a door.", "bullet": false}, {"text": "Before touching the door, you already possess expectations:", "bullet": false}, {"text": "handles are normally pulled;", "bullet": true}, {"text": "flat plates are normally pushed;", "bullet": true}, {"text": "turning a knob may release a latch.", "bullet": true}, {"text": "Those expectations are part of your mental model.", "bullet": false}, {"text": "Digital interfaces work similarly.", "bullet": false}, {"text": "When users see:", "bullet": false}, {"text": "🛒", "bullet": false}, {"text": "they may assume:", "bullet": false}, {"text": "“Things I intend to buy are stored here.”", "bullet": false}, {"text": "The interface did not need to explain the entire mechanism. Existing knowledge helps the user interpret it.", "bullet": false}]}, {"number": 12, "title": "Conceptual Model and Mental Model", "items": [{"text": "The diagram shows the relationship between the designer, system, and user.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "This is one of the most important slides in the lecture.", "bullet": false}, {"text": "The designer has an idea about how the system works.", "bullet": false}, {"text": "That understanding is represented through the system.", "bullet": false}, {"text": "The user cannot directly read the designer's mind. They only experience what the system presents.", "bullet": false}, {"text": "From that experience, the user develops their own mental model.", "bullet": false}, {"text": "Therefore we effectively have:", "bullet": false}, {"text": "Designer intention → Interface/system → User interpretation", "bullet": false}, {"text": "Problems occur when these don't align.", "bullet": false}, {"text": "HCI principle", "bullet": false}, {"text": "A usability problem is sometimes not a badly positioned button.", "bullet": false}, {"text": "It is a difference between the designer's conceptual model and the user's mental model.", "bullet": false}]}, {"number": 13, "title": "Examples of Mental-Model Mismatch", "items": [{"text": "Lecture segment", "bullet": false}, {"text": "These examples show that mental models are built from previous experience.", "bullet": false}, {"text": "If you normally pay after eating at restaurants, entering a restaurant that requires payment first may initially feel strange.", "bullet": false}, {"text": "No system is wrong by nature. The real issue is this:", "bullet": false}, {"text": "Past experiences shape what people expect. Most software works in similar ways. For example, Android users switching to a new platform will look for navigation buttons in familiar places at first. People used to Microsoft Office will expect similar terms when using a different work tool.", "bullet": false}, {"text": "When you design a new system, learn what your users are currently using. Competitor analysis is helpful because competitors have already created interaction habits for users. Therefore, changing these familiar patterns means users have to spend effort learning everything again.", "bullet": false}, {"text": "For video games, creating a completely new gameplay style can be a great breakthrough and a big success. However, if it isn't done well and forces players to spend too much time learning, it becomes a very bad experience", "bullet": false}]}, {"number": 14, "title": "Conceptual Model: High-Level Description", "items": [{"text": "This is a citation from Johnson and Henderson's definition:", "bullet": false}, {"text": "a conceptual model is a high-level description of how a system is organised and operates.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "The important phrase is high-level.", "bullet": false}, {"text": "A conceptual model does not specify:", "bullet": false}, {"text": "the exact font size;", "bullet": true}, {"text": "hexadecimal colour;", "bullet": true}, {"text": "12-pixel versus 16-pixel padding.", "bullet": true}, {"text": "Instead it concerns questions such as:", "bullet": false}, {"text": "What objects exist?", "bullet": true}, {"text": "What can users do with them?", "bullet": true}, {"text": "How are objects related?", "bullet": true}, {"text": "What happens when an action occurs?", "bullet": true}]}, {"number": 15, "title": "Conceptual and Physical Design", "items": [{"text": "Lecture segment", "bullet": false}, {"text": "This distinction is particularly important when producing coursework.", "bullet": false}, {"text": "Conceptual design asks:", "bullet": false}, {"text": "What should the user be able to do?", "bullet": true}, {"text": "What objects exist?", "bullet": true}, {"text": "How does the interaction work?", "bullet": true}, {"text": "How will users understand the application?", "bullet": true}, {"text": "Physical design asks:", "bullet": false}, {"text": "What does the screen look like?", "bullet": true}, {"text": "Where are controls positioned?", "bullet": true}, {"text": "Which colours and typography are used?", "bullet": true}, {"text": "What size should elements be?", "bullet": true}, {"text": "Students frequently jump immediately into physical design because it is visible and enjoyable.", "bullet": false}, {"text": "But attractive screens cannot rescue a fundamentally confusing conceptual model.", "bullet": false}]}, {"number": 16, "title": "Conceptual Model", "items": [{"text": "This reminds us that there is rarely only one understanding of a system.", "bullet": false}, {"text": "Developers tend to understand systems through architecture:", "bullet": false}, {"text": "database → API → service → interface.", "bullet": false}, {"text": "Users normally do not care.", "bullet": false}, {"text": "A user may understand Google Drive as:", "bullet": false}, {"text": "“The place where my files live.”", "bullet": false}, {"text": "Technically that is incomplete, but it may be entirely sufficient for successful interaction.", "bullet": false}, {"text": "Key HCI lesson", "bullet": false}, {"text": "We do not need users to understand the implementation.", "bullet": false}, {"text": "We need them to have a mental model that is sufficiently accurate to achieve their goals.", "bullet": false}, {"text": "An interface that requires users to understand technical implementation details has probably exposed unnecessary complexity.", "bullet": false}]}, {"number": 17, "title": "What Conceptual Models Consist Of", "items": [{"text": "Lecture segment", "bullet": false}, {"text": "Let's use an e-commerce application as an example for this one.", "bullet": false}, {"text": "Concepts", "bullet": false}, {"text": "Product", "bullet": true}, {"text": "Basket", "bullet": true}, {"text": "Order", "bullet": true}, {"text": "Payment", "bullet": true}, {"text": "Customer", "bullet": true}, {"text": "Relationships", "bullet": false}, {"text": "product is added the basket by the customer", "bullet": false}, {"text": "The basket becomes an order.", "bullet": false}, {"text": "The order receives payment.", "bullet": false}, {"text": "Metaphor", "bullet": false}, {"text": "We borrow the physical shopping basket/cart.", "bullet": false}, {"text": "Interaction", "bullet": false}, {"text": "Users manipulate quantities, instruct the system to remove products, and move through checkout.", "bullet": false}, {"text": "Together these form a coherent conceptual model.", "bullet": false}]}, {"number": 18, "title": "First Steps in Designing a Conceptual Model", "items": [{"text": "The slide asks four useful questions:", "bullet": false}, {"text": "What will users be doing?", "bullet": true}, {"text": "How will the system support them?", "bullet": true}, {"text": "What metaphor might be appropriate?", "bullet": true}, {"text": "What interaction modes and styles should be used?", "bullet": true}]}, {"number": 19, "title": "What is a Metaphor?", "items": [{"text": "The lecture uses Kenneth Burke's description of seeing one thing in terms of another.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "In interface design, metaphors allow users to understand unfamiliar technology through familiar ideas.", "bullet": false}, {"text": "For example:", "bullet": false}, {"text": "Computer storage is abstract.", "bullet": false}, {"text": "But we introduce:", "bullet": false}, {"text": "files;", "bullet": true}, {"text": "folders;", "bullet": true}, {"text": "desktop;", "bullet": true}, {"text": "trash/recycle bin.", "bullet": true}, {"text": "Suddenly the unfamiliar computational world resembles familiar office work.", "bullet": false}, {"text": "Why does this matter?", "bullet": false}, {"text": "Because learning entirely new systems is cognitively expensive.", "bullet": false}, {"text": "Metaphors allow designers to reuse knowledge the user already possesses.", "bullet": false}]}, {"number": 20, "title": "Metaphor Examples", "items": [{"text": "The lecture identifies:", "bullet": false}, {"text": "desktop;", "bullet": true}, {"text": "shopping cart and checkout;", "bullet": true}, {"text": "tabbed interfaces.", "bullet": true}, {"text": "Lecture segment", "bullet": false}, {"text": "These metaphors are so common today that many users no longer recognise them as metaphors.", "bullet": false}, {"text": "Desktop", "bullet": false}, {"text": "The computer screen becomes a workspace.", "bullet": false}, {"text": "We have files, folders, and a trash/recycle bin.", "bullet": false}, {"text": "Shopping cart", "bullet": false}, {"text": "Online products behave metaphorically like objects placed into a trolley.", "bullet": false}, {"text": "You can:", "bullet": false}, {"text": "add;", "bullet": true}, {"text": "remove;", "bullet": true}, {"text": "inspect;", "bullet": true}, {"text": "proceed to checkout.", "bullet": true}, {"text": "Tabs", "bullet": false}, {"text": "Tabs originally resemble physical dividers used to organise information.", "bullet": false}, {"text": "Professional question", "bullet": false}, {"text": "Whenever you introduce a metaphor, ask:", "bullet": false}, {"text": "“Does my target user already understand this metaphor?”", "bullet": false}, {"text": "A metaphor only reduces learning when users recognise the thing being referenced.", "bullet": false}]}, {"number": 23, "title": "Benefits of Metaphors", "items": [{"text": "The lecture highlights three benefits:", "bullet": false}, {"text": "easier learning;", "bullet": true}, {"text": "clearer conceptual understanding;", "bullet": true}, {"text": "potentially greater accessibility to diverse users.", "bullet": true}]}, {"number": 24, "title": "Problems with Metaphors", "items": [{"text": "The lecture warns that metaphors can:", "bullet": false}, {"text": "conflict with conventions;", "bullet": true}, {"text": "constrain designers;", "bullet": true}, {"text": "conflict with design principles;", "bullet": true}, {"text": "force users to interpret systems too literally;", "bullet": true}, {"text": "import flaws from existing systems;", "bullet": true}, {"text": "limit innovation.", "bullet": true}]}, {"number": 25, "title": "Composite Metaphors and Mental Models", "items": [{"text": "The lecture notes that modern interfaces often combine ideas that do not correspond perfectly to physical objects, such as windows and scrollbars, and that people can develop multiple mental models.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "Interfaces do not need to represent one metaphor perfectly.", "bullet": false}, {"text": "Think about a browser:", "bullet": false}, {"text": "windows;", "bullet": true}, {"text": "tabs;", "bullet": true}, {"text": "bookmarks;", "bullet": true}, {"text": "address bar;", "bullet": true}, {"text": "back button;", "bullet": true}, {"text": "download folder.", "bullet": true}, {"text": "These metaphors come from different physical experiences, yet users successfully combine them into one mental model.", "bullet": false}, {"text": "Design implication", "bullet": false}, {"text": "Designers have flexibility.", "bullet": false}, {"text": "You do not need to say:", "bullet": false}, {"text": "“Because I chose a book metaphor, everything must behave exactly like a book.”", "bullet": false}, {"text": "Instead, use concepts that help users perform tasks effectively.", "bullet": false}, {"text": "Consistency matters, but conceptual purity is not always necessary.", "bullet": false}]}, {"number": 26, "title": "Icons", "items": [{"text": "Transition segment", "bullet": false}, {"text": "We now move from large conceptual metaphors to very small interface representations: icons.", "bullet": false}, {"text": "Icons appear simple, but they depend heavily on users' existing knowledge.", "bullet": false}, {"text": "An icon that is immediately obvious to the designer may be completely meaningless to the user.", "bullet": false}, {"text": "That makes icon design an HCI problem rather than merely a graphic-design problem.", "bullet": false}]}, {"number": 27, "title": "Mental Models and Icons", "items": [{"text": "The lecture explains that when users see icons, they unconsciously map the visual representation to things they already know.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "Consider these symbols:", "bullet": false}, {"text": "▶\n🔍\n🗑️", "bullet": false}, {"text": "Most experienced technology users quickly interpret them as:", "bullet": false}, {"text": "play;", "bullet": true}, {"text": "search;", "bullet": true}, {"text": "delete.", "bullet": true}, {"text": "The meaning is not contained naturally inside the pixels.", "bullet": false}, {"text": "It exists because users have learned the conventions.", "bullet": false}, {"text": "Interesting class question", "bullet": false}, {"text": "Ask students:", "bullet": false}, {"text": "“Why does a floppy-disk icon still mean Save when many younger users have never used a floppy disk?”", "bullet": false}, {"text": "This demonstrates that interface conventions can eventually become independent of their original physical objects.", "bullet": false}, {"text": "Professional implication", "bullet": false}, {"text": "Do not assume an unfamiliar icon will be understood merely because it looks elegant.", "bullet": false}, {"text": "When meaning is important, icon + text label may be safer.", "bullet": false}]}, {"number": 30, "title": "Five Types of Interaction", "items": [{"text": "The lecture introduces:", "bullet": false}, {"text": "Instructing", "bullet": true}, {"text": "Conversing", "bullet": true}, {"text": "Manipulating", "bullet": true}, {"text": "Exploring", "bullet": true}, {"text": "Responding", "bullet": true}, {"text": "Lecture segment", "bullet": false}, {"text": "These interaction types give us different ways to conceptualise the relationship between human and system.", "bullet": false}, {"text": "Instead of immediately asking:", "bullet": false}, {"text": "“Should this be a button or dropdown?”", "bullet": false}, {"text": "Ask:", "bullet": false}, {"text": "“What kind of interaction should happen here?”", "bullet": false}, {"text": "Users may:", "bullet": false}, {"text": "give the system commands;", "bullet": true}, {"text": "hold a conversation;", "bullet": true}, {"text": "directly manipulate objects;", "bullet": true}, {"text": "explore an environment;", "bullet": true}, {"text": "respond to something initiated by the system.", "bullet": true}, {"text": "Many modern applications combine several of these.", "bullet": false}]}, {"number": 31, "title": "Instructing", "items": [{"text": "The slide illustrates instructing using a vending machine.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "In instructing, users tell the system what they want it to do.", "bullet": false}, {"text": "For example:", "bullet": false}, {"text": "Press B7.", "bullet": false}, {"text": "The system interprets the instruction and performs the action.", "bullet": false}, {"text": "Digital examples include:", "bullet": false}, {"text": "clicking Print;", "bullet": true}, {"text": "selecting Delete;", "bullet": true}, {"text": "choosing a command from a menu;", "bullet": true}, {"text": "entering a keyboard shortcut.", "bullet": true}, {"text": "When is instructing effective?", "bullet": false}, {"text": "Usually when:", "bullet": false}, {"text": "actions are clearly defined;", "bullet": true}, {"text": "tasks repeat;", "bullet": true}, {"text": "users know what outcome they want.", "bullet": true}, {"text": "For example, in file management:", "bullet": false}, {"text": "Copy, rename, delete, move.", "bullet": false}, {"text": "These are clear instructions.", "bullet": false}, {"text": "Design concern", "bullet": false}, {"text": "The user must understand available commands.", "bullet": false}, {"text": "If commands are hidden or badly labelled, instructing becomes difficult.", "bullet": false}]}, {"number": 32, "title": "Conversing", "items": [{"text": "The slide illustrates a conversational interaction using a ticket machine.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "Conversational interaction makes the system behave more like an exchange between two parties.", "bullet": false}, {"text": "The machine asks:", "bullet": false}, {"text": "“Where are you travelling?”", "bullet": false}, {"text": "The user responds.", "bullet": false}, {"text": "Then:", "bullet": false}, {"text": "“Single or return?”", "bullet": false}, {"text": "And so on.", "bullet": false}, {"text": "Modern conversational systems make this even more obvious:", "bullet": false}, {"text": "“Book me a flight to Paris next Tuesday.”", "bullet": false}, {"text": "Benefits", "bullet": false}, {"text": "Conversational interaction can reduce the need to understand complex interface structures.", "bullet": false}, {"text": "But there is a danger", "bullet": false}, {"text": "A conversational interface creates an expectation that the system understands language.", "bullet": false}, {"text": "When the system repeatedly responds:", "bullet": false}, {"text": "“Sorry, I didn't understand that.”", "bullet": false}, {"text": "the conversational metaphor collapses.", "bullet": false}, {"text": "Therefore conversation works best when the system can manage both expected and unexpected user input appropriately.", "bullet": false}]}, {"number": 33, "title": "Manipulating", "items": [{"text": "The slide uses motion-based gaming to demonstrate manipulation.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "Manipulation means interacting directly with objects rather than giving abstract commands.", "bullet": false}, {"text": "Examples include:", "bullet": false}, {"text": "dragging a file;", "bullet": true}, {"text": "resizing a window;", "bullet": true}, {"text": "rotating an image;", "bullet": true}, {"text": "pinching to zoom;", "bullet": true}, {"text": "moving an object in a game.", "bullet": true}, {"text": "Compare:", "bullet": false}, {"text": "“Increase image scale to 150%.”", "bullet": false}, {"text": "with simply pinching outward.", "bullet": false}, {"text": "The second feels like manipulating the object itself.", "bullet": false}, {"text": "Professional application", "bullet": false}, {"text": "Direct manipulation is particularly powerful when the task is:", "bullet": false}, {"text": "spatial;", "bullet": true}, {"text": "visual;", "bullet": true}, {"text": "creative;", "bullet": true}, {"text": "physical.", "bullet": true}, {"text": "Examples include:", "bullet": false}, {"text": "CAD;", "bullet": true}, {"text": "graphic design;", "bullet": true}, {"text": "maps;", "bullet": true}, {"text": "video editing;", "bullet": true}, {"text": "games.", "bullet": true}, {"text": "The user receives immediate visual feedback, making the relationship between action and result easy to understand.", "bullet": false}]}, {"number": 34, "title": "Exploring", "items": [{"text": "The slide uses a Minecraft recreation of an environment to represent exploratory interaction.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "In exploratory interaction, users navigate through an information space or environment.", "bullet": false}, {"text": "Rather than executing one predefined task, users discover information through movement and exploration.", "bullet": false}, {"text": "Examples include:", "bullet": false}, {"text": "Minecraft;", "bullet": true}, {"text": "Google Maps;", "bullet": true}, {"text": "virtual museums;", "bullet": true}, {"text": "VR environments;", "bullet": true}, {"text": "3D architectural walkthroughs.", "bullet": true}, {"text": "Professional consideration", "bullet": false}, {"text": "Exploration is useful when discovery itself matters.", "bullet": false}, {"text": "But it is less suitable when users need to perform a critical task quickly.", "bullet": false}, {"text": "Imagine requiring a hospital employee to “explore” a virtual environment simply to locate an emergency patient record.", "bullet": false}, {"text": "Interesting interaction does not necessarily mean appropriate interaction.", "bullet": false}]}, {"number": 35, "title": "Responding", "items": [{"text": "The slide uses a transport application that alerts users when they should leave or get off.", "bullet": false}, {"text": "Lecture segment", "bullet": false}, {"text": "This interaction is different because the system initiates the interaction.", "bullet": false}, {"text": "The system says, effectively:", "bullet": false}, {"text": "“Something has happened; now I need your attention.”", "bullet": false}, {"text": "Examples include:", "bullet": false}, {"text": "calendar reminders;", "bullet": true}, {"text": "navigation alerts;", "bullet": true}, {"text": "fraud warnings;", "bullet": true}, {"text": "low-stock notifications;", "bullet": true}, {"text": "medication reminders.", "bullet": true}, {"text": "Key design problem", "bullet": false}, {"text": "When systems initiate interaction, designers must decide:", "bullet": false}, {"text": "when to interrupt;", "bullet": true}, {"text": "how urgent the interruption should be;", "bullet": true}, {"text": "how often to notify;", "bullet": true}, {"text": "what action the user should take.", "bullet": true}, {"text": "Too little notification creates missed information.", "bullet": false}, {"text": "Too much notification creates notification fatigue.", "bullet": false}, {"text": "Eventually users ignore everything.", "bullet": false}, {"text": "Therefore responding interactions require careful prioritisation.", "bullet": false}]}, {"number": 36, "title": "Which Interaction Types Are Best?", "items": [{"text": "The lecture matches different interaction types with different activities:", "bullet": false}, {"text": "instructing → repetitive tasks;", "bullet": true}, {"text": "conversation → various accessibility and specialist situations;", "bullet": true}, {"text": "manipulation → doing and spatial tasks;", "bullet": true}, {"text": "exploration → learning, socialising and games;", "bullet": true}, {"text": "hybrid conceptual models → multiple interaction approaches.", "bullet": true}, {"text": "Lecture segment", "bullet": false}, {"text": "There is no universally best interaction type.", "bullet": false}, {"text": "The appropriate interaction depends on the task, user, and context.", "bullet": false}, {"text": "Consider deleting a photograph.", "bullet": false}, {"text": "We could support:", "bullet": false}, {"text": "Instructing: press Delete.", "bullet": true}, {"text": "Manipulating: drag the photograph into Trash.", "bullet": true}, {"text": "Conversing: “Delete this photo.”", "bullet": true}, {"text": "Responding: system asks whether old duplicates should be removed.", "bullet": true}, {"text": "All could be technically valid.", "bullet": false}, {"text": "The HCI question is:", "bullet": false}, {"text": "Which is most appropriate for this user and this situation?", "bullet": false}, {"text": "Hybrid interfaces", "bullet": false}, {"text": "Modern systems commonly combine interaction types.", "bullet": false}, {"text": "Google Maps, for example, may support:", "bullet": false}, {"text": "direct manipulation of the map;", "bullet": true}, {"text": "text search;", "bullet": true}, {"text": "voice instruction;", "bullet": true}, {"text": "system-generated navigation alerts.", "bullet": true}, {"text": "This creates flexibility but may also increase learning complexity.", "bullet": false}]}];
+const labels = new Set(["Benefits", "But there is a danger", "Class discussion", "Concepts", "Design concern", "Design implication", "HCI principle", "Hybrid interfaces", "Interaction", "Interesting class question", "Key HCI lesson", "Key design problem", "Lecture segment", "Metaphor", "Professional application", "Professional consideration", "Professional implication", "Professional question", "Relationships", "Transition segment", "When is instructing effective?"]);
+let index = 0;
+let fontSize = Number(localStorage.getItem("readerFontSize") || 18);
+
+const $ = (id) => document.getElementById(id);
+const reader = $("reader");
+
+function esc(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderItems(items) {
+  let out = "";
+  let inList = false;
+  items.forEach((item, i) => {
+    const text = item.text.trim();
+    if (item.bullet) {
+      if (!inList) { out += "<ul>"; inList = true; }
+      out += `<li>${esc(text)}</li>`;
+      return;
+    }
+    if (inList) { out += "</ul>"; inList = false; }
+
+    if (labels.has(text)) {
+      out += `<div class="section-label">${esc(text)}</div>`;
+    } else if (/^[“"].*[”"]$/.test(text) || (text.startsWith("“") && text.endsWith("”"))) {
+      out += `<div class="quote">${esc(text)}</div>`;
+    } else {
+      const cls = i === 0 ? ' class="lead"' : "";
+      out += `<p${cls}>${esc(text)}</p>`;
+    }
+  });
+  if (inList) out += "</ul>";
+  return out;
+}
+
+function setHash(slideNumber) {
+  history.replaceState(null, "", `#slide=${slideNumber}`);
+}
+
+function render() {
+  const s = slides[index];
+  $("topSlideNo").textContent = `Slide ${s.number}`;
+  $("topTitle").textContent = s.title;
+  $("slidePill").textContent = `Slide ${s.number}`;
+  $("slideTitle").textContent = s.title;
+  $("slideContent").innerHTML = renderItems(s.items);
+  $("slideCount").textContent = `${index + 1} / ${slides.length}`;
+  $("progressLabel").textContent = `${Math.round(((index + 1) / slides.length) * 100)}%`;
+  $("progressBar").style.width = `${((index + 1) / slides.length) * 100}%`;
+  $("prevBtn").disabled = index === 0;
+  $("nextBtn").disabled = index === slides.length - 1;
+  $("nextBtn").textContent = index === slides.length - 1 ? "Finished ✓" : "Next →";
+  reader.scrollTop = 0;
+  setHash(s.number);
+
+  document.querySelectorAll(".toc button").forEach((b, i) => b.classList.toggle("active", i === index));
+}
+
+function go(delta) {
+  const next = Math.max(0, Math.min(slides.length - 1, index + delta));
+  if (next !== index) { index = next; render(); }
+}
+
+function goTo(i) {
+  index = i; render(); closeDrawerFn();
+}
+
+function buildToc() {
+  $("toc").innerHTML = slides.map((s, i) =>
+    `<button data-i="${i}"><span class="toc-num">Slide ${s.number}</span><span class="toc-title">${esc(s.title)}</span></button>`
+  ).join("");
+  $("toc").addEventListener("click", e => {
+    const btn = e.target.closest("button[data-i]");
+    if (btn) goTo(Number(btn.dataset.i));
+  });
+}
+
+function openDrawer() {
+  $("drawer").classList.add("open"); $("backdrop").classList.add("open");
+}
+function closeDrawerFn() {
+  $("drawer").classList.remove("open"); $("backdrop").classList.remove("open");
+}
+
+$("prevBtn").onclick = () => go(-1);
+$("nextBtn").onclick = () => go(1);
+$("menuBtn").onclick = openDrawer;
+$("closeDrawer").onclick = closeDrawerFn;
+$("backdrop").onclick = closeDrawerFn;
+
+$("fontDown").onclick = () => {
+  fontSize = Math.max(14, fontSize - 1);
+  document.documentElement.style.setProperty("--reader-size", fontSize + "px");
+  localStorage.setItem("readerFontSize", fontSize);
+};
+$("fontUp").onclick = () => {
+  fontSize = Math.min(26, fontSize + 1);
+  document.documentElement.style.setProperty("--reader-size", fontSize + "px");
+  localStorage.setItem("readerFontSize", fontSize);
+};
+document.documentElement.style.setProperty("--reader-size", fontSize + "px");
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") go(-1);
+  if (e.key === "ArrowRight") go(1);
+  if (e.key === "Escape") closeDrawerFn();
+});
+
+let touchStartX = null, touchStartY = null;
+reader.addEventListener("touchstart", e => {
+  const t = e.changedTouches[0]; touchStartX = t.clientX; touchStartY = t.clientY;
+}, {passive:true});
+reader.addEventListener("touchend", e => {
+  if (touchStartX === null) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
+  if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.3) go(dx < 0 ? 1 : -1);
+  touchStartX = touchStartY = null;
+}, {passive:true});
+
+function loadFromHash() {
+  const m = location.hash.match(/slide=(\d+)/);
+  if (!m) return;
+  const wanted = Number(m[1]);
+  const found = slides.findIndex(s => s.number === wanted);
+  if (found >= 0) index = found;
+}
+
+buildToc();
+loadFromHash();
+render();
+</script>
+</body>
+</html>
