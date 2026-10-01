@@ -1,0 +1,171 @@
+<header class="slide-heading">
+  <div class="slide-kicker">Slide 13</div>
+  <h1>p-Value, α and Statistical Decision</h1>
+</header>
+<p class="lead">Approximately 10 minutes</p>
+<p>This is the most important technical slide in this lecture.</p>
+<p>The materials introduce:</p>
+<p>the significance level,</p>
+<p>test statistic,</p>
+<p>p-value,</p>
+<p>and comparison between p and α.</p>
+<p>Let&#x27;s go slowly.</p>
+<h2 class="section-label">Step 1 – Choose α</h2>
+<p>Alpha, written:</p>
+<p>[
+\alpha
+]</p>
+<p>is the significance threshold.</p>
+<p>Common values in the notes include:</p>
+<p>0.05,</p>
+<p>0.01,</p>
+<p>0.10.</p>
+<p>Suppose:</p>
+<p>[
+\alpha=0.05
+]</p>
+<p>This gives us a decision threshold.</p>
+<h2 class="section-label">Step 2 – Calculate a test statistic</h2>
+<p>Depending on the analysis, we may perform:</p>
+<p>a t-test,</p>
+<p>Z-test,</p>
+<p>Chi-square test,</p>
+<p>or another appropriate statistical test.</p>
+<p>The statistical procedure generates a test statistic.</p>
+<h2 class="section-label">Step 3 – Obtain the p-value</h2>
+<p>The supporting notes define the p-value as the probability of obtaining the observed sample result, or something more extreme, given that H₀ is true.</p>
+<p>That final condition is essential.</p>
+<h2 class="section-label">Correct interpretation</h2>
+<p>Suppose:</p>
+<p>[
+p=0.035
+]</p>
+<p>You can say:</p>
+<blockquote>“Assuming the null hypothesis is true, the probability of obtaining a result at least as extreme as the observed one is approximately 3.5%.”</blockquote>
+<p>That is the correct statistical interpretation.</p>
+<h2 class="section-label">Lecturer Clarification – What a p-value is NOT</h2>
+<p>The PowerPoint contains wording such as:</p>
+<blockquote>“there is a 3.5% chance your results could be random.”</blockquote>
+<p>Do not teach students that interpretation literally.</p>
+<p>A p-value is not:</p>
+<p>the probability that H₀ is true,</p>
+<p>the probability that H₀ is false,</p>
+<p>the probability that your result happened “by chance,”</p>
+<p>or the probability that your research hypothesis is correct.</p>
+<p>The p-value is calculated under the assumption that H₀ is true.</p>
+<p>So always condition the explanation:</p>
+<blockquote>“If H₀ were true…”</blockquote>
+<p>This phrase will protect you from many p-value mistakes.</p>
+<h2 class="section-label">Step 4 – Compare p with α</h2>
+<p>Decision rule:</p>
+<p>If:</p>
+<p>[
+p\leq\alpha
+]</p>
+<p>we:</p>
+<p>Reject H₀.</p>
+<p>If:</p>
+<p>[
+p&gt;\alpha
+]</p>
+<p>we:</p>
+<p>Fail to reject H₀.</p>
+<p>Example from the notes</p>
+<p>Suppose:</p>
+<p>[
+\alpha=0.05
+]</p>
+<p>and:</p>
+<p>[
+p=0.02
+]</p>
+<p>Because:</p>
+<p>[
+0.02&lt;0.05
+]</p>
+<p>we reject H₀.</p>
+<p>The result is statistically significant at the 5% level.</p>
+<h2 class="section-label">Easy memory trick</h2>
+<p>Students often reverse the decision.</p>
+<p>Remember:</p>
+<p>Small p → evidence against H₀.</p>
+<p>If p is tiny, the observed result looks difficult to explain under H₀.</p>
+<h2 class="section-label">Example 1</h2>
+<p>[
+p=0.003
+]</p>
+<p>[
+\alpha=0.05
+]</p>
+<p>Decision?</p>
+<p>0.003 &lt; 0.05.</p>
+<p>Reject H₀.</p>
+<h2 class="section-label">Example 2</h2>
+<p>[
+p=0.40
+]</p>
+<p>[
+\alpha=0.05
+]</p>
+<p>Decision?</p>
+<p>0.40 &gt; 0.05.</p>
+<p>Fail to reject H₀.</p>
+<p>Do we say:</p>
+<p>“H₀ is proven”?</p>
+<p>No.</p>
+<p>We say:</p>
+<p>The sample does not provide sufficient evidence to reject H₀.</p>
+<h2 class="section-label">Example 3 – Very close</h2>
+<p>[
+p=0.051
+]</p>
+<p>[
+\alpha=0.05
+]</p>
+<p>Technically:</p>
+<p>0.051 &gt; 0.05.</p>
+<p>So under this rule:</p>
+<p>fail to reject H₀.</p>
+<p>Now:</p>
+<p>[
+p=0.049
+]</p>
+<p>Technically:</p>
+<p>reject H₀.</p>
+<p>But notice how close these values are.</p>
+<p>Would you say:</p>
+<p>0.049 = amazing strong evidence,</p>
+<p>but</p>
+<p>0.051 = absolutely no evidence?</p>
+<p>No.</p>
+<p>This demonstrates why analysts should not treat 0.05 as a magical cliff.</p>
+<p>The actual p-value and broader evidence should still be reported.</p>
+<h2 class="section-label">Type I Error</h2>
+<p>The notes connect α = 0.05 to the risk of rejecting H₀ when H₀ is actually true.</p>
+<p>That is called a:</p>
+<p>Type I error.</p>
+<p>Think:</p>
+<p>False alarm.</p>
+<p>You conclude an effect exists.</p>
+<p>But actually it does not.</p>
+<h2 class="section-label">Example</h2>
+<p>H₀:</p>
+<p>The new website design has no effect.</p>
+<p>You reject H₀ and announce:</p>
+<blockquote>“The redesign works!”</blockquote>
+<p>But in reality, the redesign does not affect the population.</p>
+<p>That is a Type I error.</p>
+<h2 class="section-label">Quick class challenge</h2>
+<p>I&#x27;ll show you pairs.</p>
+<p>Tell me the decision when α = 0.05.</p>
+<p>p = 0.80.</p>
+<p>Fail to reject H₀.</p>
+<p>p = 0.10.</p>
+<p>Fail to reject.</p>
+<p>p = 0.049.</p>
+<p>Reject.</p>
+<p>p = 0.001.</p>
+<p>Reject.</p>
+<p>Excellent.</p>
+<h2 class="section-label">Transition</h2>
+<p>This naturally raises another question: why do we keep comparing p-values with 0.05? Is 0.05 a law of nature?</p>

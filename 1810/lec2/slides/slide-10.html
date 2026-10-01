@@ -1,0 +1,16 @@
+<header class="slide-heading">
+  <div class="slide-kicker">Slide 10</div>
+  <h1>Engagement and bounce rate in GA4</h1>
+</header>
+<div class="note"><strong>Teaching cue:</strong> 40 to 46. Explain the updated definition before interpreting the older screenshot. Give pairs one minute to classify the four sessions below. Assume the default engagement timer and correct measurement throughout the exercise.</div>
+<p class="lead">The bouncing-ball image is easy to remember, but the definition beside it is too simple for current GA4. A bounce does not necessarily mean that a person left immediately or did absolutely nothing.</p>
+<p>GA4 defines bounce rate as the percentage of sessions that were not engaged. Under the default timing criterion, an engaged session lasts longer than ten seconds, contains a key event, or has at least two page or screen views. Meeting any one of these conditions is sufficient. The engagement timer can be configured, so record the setting used by the property. [10, 3]</p>
+<p>Let’s classify four measured sessions. Session A has one pageview, lasts five seconds, and has no key event. Session B has one pageview, lasts forty seconds, and has no key event. Session C has two pageviews in eight seconds. Session D has one pageview and a correctly recorded key event after six seconds. Which sessions are engaged?</p>
+<div class="note"><strong>Teaching cue:</strong> B, C, and D are engaged. A is not. Ask one pair to explain how a single-page session can qualify as engaged.</div>
+<p>This shows why the old definition, “everyone who leaves after one page”, does not work for GA4. It also shows why a quick successful action can count as engagement when it is recorded as a key event.</p>
+<p>If 70 of 100 sessions are engaged, the engagement rate is 70 percent and the bounce rate is 30 percent. Keep the denominator as sessions. We are not dividing by pageviews or distinct users.</p>
+<p>The screenshot’s 48.07 percent belongs to an older Universal Analytics report. It is a historical value calculated under that platform’s rules. We should not compare it directly with a current GA4 bounce rate and announce improvement or decline. Universal Analytics has been replaced by GA4. [25]</p>
+<p>There is also no universal verdict that 48 percent is good or bad. A visitor might find a useful opening time quickly and leave. Another might leave because a mobile button does not work. Bounce rate alone cannot distinguish those experiences.</p>
+<p>For UniCart, a rise in mobile landing-session bounce rate would justify checking the audience, the page, and the collection setup. I would also examine purchase outcomes. If someone marks an easily triggered event as a key event, the measured bounce rate may change even when the customer experience stays the same.</p>
+<p>We want students and analysts to improve the experience and the business outcome. Changing a reporting setting simply to make a number look better would undermine that purpose.</p>
+<div class="example">Transition to slide 11: Time can help us investigate engagement, provided we distinguish the available time measures and relate them to the task.</div>
